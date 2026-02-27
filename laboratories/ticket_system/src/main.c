@@ -51,7 +51,7 @@ int main() {
 	return 1;
     }
 
-    buffer[strcspn(buffer, "\n")] = '0';
+    buffer[strcspn(buffer, "\n")] = '\0';
 
     if (strchr(buffer, '@') == NULL){
 	printf("Correo invalido\n");
@@ -92,9 +92,30 @@ int main() {
 
     ticket->radicado = (long) time(NULL);
 
-    /*TODO ¿Crear archivo acá?*/
+    char nombre_archivo[100];
+    snprintf(nombre_archivo, sizeof(nombre_archivo), "assets/ticket_%ld.txt", ticket->radicado);
 
-    printf("Radicado generado: %ld\n", ticket->radicado);
+    printf("Intentando crear archivo en: %s\n", nombre_archivo);
+
+    FILE *archivo = fopen(nombre_archivo, "w");
+
+    if (archivo == NULL){
+	printf("Error creando archivo\n");
+	free(ticket->correo);
+	free(ticket->tipo_reclamacion);
+	free(ticket);
+	return 1;
+    }
+
+    fprintf(archivo, "Radicado: %ld\n", ticket->radicado);
+    fprintf(archivo, "Identificación: %d\n", ticket->identificacion);
+    fprintf(archivo, "Correo: %s\n", ticket->correo);
+    fprintf(archivo, "Tipo de reclamación: %s\n", ticket->tipo_reclamacion);
+
+    fclose(archivo);
+
+    printf("Ticket registrado correctamente\n");
+    printf("Número de radicado: %ld\n", ticket->radicado);
 
     free(ticket->correo);
     free(ticket->tipo_reclamacion);
