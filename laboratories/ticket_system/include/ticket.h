@@ -8,4 +8,8 @@ typedef struct {
     char *tipo_reclamacion;
 } Ticket;
 
+Ticket *crer_ticket();
+void liberar_ticket(Ticket *ticket);
+int guardar_ticket(Ticket *ticket);
+
 #endif

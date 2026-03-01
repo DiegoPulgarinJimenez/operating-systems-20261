@@ -1,125 +1,71 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "ticket.h"
+#include "utils.h"
 #include <time.h>
-#include "ticket/ticket.h"
 
 #define BUFFER 256
 
-int es_numerico(const char *str){
-    if (*str == '\0') return 0;
-
-    for (int i = 0; str[i] != '\0'; i++){
-    	if (str[i] < '0' || str[i] > '9')
-    	    return 0;
-    }
-    return 1;
-}
-
 int main() {
 
-    Ticket *ticket = (Ticket *) malloc(sizeof(Ticket));
+	Ticket *ticket = malloc(sizeof(Ticket));
+	if (!ticket) {
+		printf("Error de memoria\n");
+		return 1;
+	}
 
-    if (ticket == NULL) {
-    	printf("Error de memoria\n");
-    	return 1;
-    }
+	char buffer[BUFFER];
 
-    char buffer[BUFFER];
+	printf("Ingrese Identificación: ");
+	fgets(buffer, BUFFER, stdin);
+	buffer[strcspn(buffer, "\n")] = '\0';
 
-    printf("Ingrese Identificación: ");
-    if (fgets(buffer, BUFFER, stdin) == NULL) {
-    	printf("Error leyendo datos\n");
-    	free(ticket);
-    	return 1;
-    }
+	if (!es_numerico(buffer)){
+		printf("Identificación inválida\n");
+		liberar_ticket(ticket);
+		return 1;
+	}
 
-    buffer[strcspn(buffer, "\n")] = '\0';
+	ticket->identificacion = atoi(buffer);
 
-    if (!es_numerico(buffer)){
-	printf("La identificación debe ser numerica\n");
-	free(ticket);
-	return 1;
-    }
+	printf("Ingrese Correo: ");
+	fgets(buffer, BUFFER, stdin);
+	buffer[strcspn(buffer, "\n")] = '\0';
 
-    ticket->identificacion = atoi(buffer);
+	if (!validar_correo(buffer)){
+		printf("Correo inválido\n");
+		liberar_ticket(ticket);
+		return 1;
+	}
 
-    printf("Ingrese Correo: ");
-    if(fgets(buffer, BUFFER, stdin) == NULL){
-	printf("Error leyendo datos\n");
-	free(ticket);
-	return 1;
-    }
+	ticket->correo = malloc(strlen(buffer) + 1);
+	strcpy(ticket->correo, buffer);
 
-    buffer[strcspn(buffer, "\n")] = '\0';
+	printf("Ingrese tipo de reclamación: ");
+	fgets(buffer, BUFFER, stdin);
+	buffer[strcspn(buffer, "\n")] = '\0';
 
-    if (strchr(buffer, '@') == NULL){
-	printf("Correo invalido\n");
-	free(ticket);
-	return 1;
-    }
+	if (cadena_vacia(buffer)) {
+		printf("La reclamación no puede estar vacía\n");
+		liberar_ticket(ticket);
+		return 1;
+	}
 
-    ticket->correo = (char *) malloc(strlen(buffer) + 1);
+	ticket->tipo_reclamacion = malloc(strlen(buffer) + 1);
+	strcpy(ticket->tipo_reclamacion, buffer);
 
-    if (ticket->correo == NULL){
-    	printf("Error de memoria\n");
-    	free(ticket);
-	return 1;
-    }
+	ticket->radicado = time(NULL);
 
-    strcpy(ticket->correo, buffer);
+	if (!guardar_ticket(ticket)){
+		printf("Error creando archivo\n");
+		liberar_ticket(ticket);
+		return 1;
+	}
 
-    printf("Ingrese tipo de reclamacion: ");
-    if (fgets(buffer, BUFFER, stdin) == NULL) {
-        printf("Error leyendo datos\n");
-        free(ticket->correo);
-        free(ticket);
-        return 1;
-    }
+	printf("Ticket registrado correctamente\n");
+	printf("Número de radicado: %ld\n", ticket->radicado);
 
-    buffer[strcspn(buffer, "\n")] = '\0';
-    ticket->tipo_reclamacion = (char *) malloc(strlen(buffer) + 1);
-
-    if (ticket->tipo_reclamacion == NULL) {
-	printf("Error de memoria\n");
-    	free(ticket->correo);
-    	free(ticket);
-    	return 1;
-    }
-
-
-    strcpy(ticket->tipo_reclamacion, buffer);
-
-    ticket->radicado = (long) time(NULL);
-
-    char nombre_archivo[100];
-    snprintf(nombre_archivo, sizeof(nombre_archivo), "assets/ticket_%ld.txt", ticket->radicado);
-
-    printf("Intentando crear archivo en: %s\n", nombre_archivo);
-
-    FILE *archivo = fopen(nombre_archivo, "w");
-
-    if (archivo == NULL){
-	printf("Error creando archivo\n");
-	free(ticket->correo);
-	free(ticket->tipo_reclamacion);
-	free(ticket);
-	return 1;
-    }
-
-    fprintf(archivo, "Radicado: %ld\n", ticket->radicado);
-    fprintf(archivo, "Identificación: %d\n", ticket->identificacion);
-    fprintf(archivo, "Correo: %s\n", ticket->correo);
-    fprintf(archivo, "Tipo de reclamación: %s\n", ticket->tipo_reclamacion);
-
-    fclose(archivo);
-
-    printf("Ticket registrado correctamente\n");
-    printf("Número de radicado: %ld\n", ticket->radicado);
-
-    free(ticket->correo);
-    free(ticket->tipo_reclamacion);
-    free(ticket);
-
-    return 0;
+	liberar_ticket(ticket);
+	return 0;
 }
